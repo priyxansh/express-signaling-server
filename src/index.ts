@@ -30,9 +30,25 @@ app.get("/", (req, res) => {
   res.json({ message: "Hello World." });
 });
 
+// Create map for userId and socketId
+// Integrate redis later
+const userToSocket = new Map();
+const socketToUser = new Map();
+
 // Listen for incoming socket events
 io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
+
+  // Listen for socket events
+  socket.on(
+    "join-room",
+    ({ roomId, userId }: { roomId: string; userId: string }) => {
+      userToSocket.set(userId, socket.id);
+      socketToUser.set(socket.id, userId);
+
+      io.to(socket.id).emit("joined-room", { roomId, userId });
+    }
+  );
 });
 
 // Start the server
