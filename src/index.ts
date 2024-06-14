@@ -37,8 +37,6 @@ const socketToUser = new Map();
 
 // Listen for incoming socket events
 io.on("connection", (socket) => {
-  console.log("A user connected", socket.id);
-
   // Listen for socket events
   socket.on(
     "join-room",
@@ -46,7 +44,60 @@ io.on("connection", (socket) => {
       userToSocket.set(userId, socket.id);
       socketToUser.set(socket.id, userId);
 
+      io.to(roomId).emit("user-joined", {
+        userId,
+        socketId: socket.id,
+      });
+
+      console.log("User joined room", roomId, userId, socket.id);
+
+      socket.join(roomId);
+
       io.to(socket.id).emit("joined-room", { roomId, userId });
+    }
+  );
+
+  socket.on(
+    "offer",
+    (data: { offer: RTCSessionDescriptionInit; to: string }) => {
+      console.log("offer", data.to);
+      io.to(data.to).emit("offer", {
+        offer: data.offer,
+        from: socket.id,
+      });
+    }
+  );
+
+  socket.on(
+    "answer",
+    (data: { answer: RTCSessionDescriptionInit; to: string }) => {
+      console.log({ answer: data.answer, to: data.to });
+      io.to(data.to).emit("answer", {
+        answer: data.answer,
+        from: socket.id,
+      });
+    }
+  );
+
+  socket.on(
+    "negotiation-needed",
+    (data: { offer: RTCSessionDescriptionInit; to: string }) => {
+      console.log("offer", data.to);
+      io.to(data.to).emit("negotiation-needed", {
+        offer: data.offer,
+        from: socket.id,
+      });
+    }
+  );
+
+  socket.on(
+    "negotiation-done",
+    (data: { answer: RTCSessionDescriptionInit; to: string }) => {
+      console.log("answer", data.to);
+      io.to(data.to).emit("negotiation-done", {
+        answer: data.answer,
+        from: socket.id,
+      });
     }
   );
 });
